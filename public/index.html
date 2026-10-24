@@ -388,36 +388,36 @@
 
     async function watchAd() {
         if (!currentUser) return;
-        document.getElementById('status').innerText = 'Loading live ad...';
+        document.getElementById('status').innerText = 'Opening sponsor ad...';
 
-        // Check if Monetag's trigger function is active
-        if (typeof show_301371 === 'function') {
-            show_301371().then(async () => {
-                // Ad completed successfully: credit ad reward to backend
-                await creditAdReward();
-            }).catch((err) => {
-                document.getElementById('status').innerText = 'Ad closed or failed to display. Try again.';
-            });
-        } else {
-            // Fallback for ad-blockers or slow network load
-            document.getElementById('status').innerText = 'Ad network initializing... Please try again in 5 seconds.';
+        // 1. Open your Monetag Direct Link in a new tab
+        const adWindow = window.open('https://uplcm.com/4/12113413', '_blank');
+
+        if (!adWindow) {
+            document.getElementById('status').innerText = 'Please allow popups to view ads and earn rewards.';
+            return;
         }
-    }
 
-    async function creditAdReward() {
-        const res = await fetch('/api/mine/watch-ad', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUser.id })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            currentUser.balance = parseFloat(data.newBalance);
-            document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
-            document.getElementById('ad-count').innerText = `${data.adsWatched}/2`;
-            document.getElementById('status').innerText = data.message;
-        } else {
-            document.getElementById('status').innerText = data.error;
+        // 2. Call server backend to grant the +5 $NEXIS reward
+        try {
+            const res = await fetch('/api/mine/watch-ad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                currentUser.balance = parseFloat(data.newBalance);
+                document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
+                document.getElementById('ad-count').innerText = `${data.adsWatched}/2`;
+                document.getElementById('status').innerText = data.message;
+            } else {
+                document.getElementById('status').innerText = data.error;
+            }
+        } catch (err) {
+            document.getElementById('status').innerText = 'Error crediting ad reward. Please try again.';
         }
     }
 

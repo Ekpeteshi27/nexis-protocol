@@ -9,7 +9,7 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database initialization with safe column additions
+// Bulletproof database initialization
 async function initDb() {
   try {
     await pool.query(`
@@ -47,16 +47,15 @@ async function initDb() {
         start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         reward_rate NUMERIC(10, 4) NOT NULL,
+        ads_watched INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE
       );
     `);
 
-    // Safely add ads_watched column if it doesn't exist yet
-    await pool.query(`
-      ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;
-    `);
+    // Ensure ads_watched column always exists
+    await pool.query(`ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;`);
 
-    console.log('Database tables and columns verified successfully.');
+    console.log('Database verified successfully.');
   } catch (err) {
     console.error('DB Init Error:', err);
   }
@@ -99,7 +98,7 @@ app.post('/api/user/register', async (req, res) => {
 
     const currentRate = await getOrUpdateRewardRate();
     
-    const sessionRes = await pool.query(
+    let sessionRes = await pool.query(
       'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE ORDER BY start_time DESC LIMIT 1',
       [user.id]
     );
@@ -120,9 +119,7 @@ app.post('/api/user/register', async (req, res) => {
     let announcements = { rows: [] };
     try {
       announcements = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 5');
-    } catch (e) {
-      console.log('Announcements table check:', e.message);
-    }
+    } catch (e) {}
 
     res.json({ user, currentRate, activeSession, stats: statsRes.rows[0], announcements: announcements.rows });
   } catch (err) {
@@ -145,7 +142,7 @@ app.post('/api/mine/start', async (req, res) => {
 
     const currentRate = await getOrUpdateRewardRate();
     const newSession = await pool.query(
-      'INSERT INTO mining_sessions (user_id, reward_rate) VALUES ($1, $2) RETURNING *',
+      'INSERT INTO mining_sessions (user_id, reward_rate, ads_watched) VALUES ($1, $2, 0) RETURNING *',
       [userId, currentRate]
     );
 
@@ -155,11 +152,11 @@ app.post('/api/mine/start', async (req, res) => {
   }
 });
 
-// Watch Ad Bonus
+// Watch Ad Bonus (Safe Fallback)
 app.post('/api/mine/watch-ad', async (req, res) => {
   const { userId } = req.body;
   try {
-    const sessionRes = await pool.query(
+    let sessionRes = await pool.query(
       'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE',
       [userId]
     );
@@ -169,12 +166,14 @@ app.post('/api/mine/watch-ad', async (req, res) => {
     }
 
     const session = sessionRes.rows[0];
-    if (session.ads_watched >= 2) {
+    const currentAdsWatched = session.ads_watched || 0;
+
+    if (currentAdsWatched >= 2) {
       return res.status(400).json({ error: 'Maximum 2 bonus ads reached for this session.' });
     }
 
     const bonusAmount = 5.0000;
-    const newAdCount = session.ads_watched + 1;
+    const newAdCount = currentAdsWatched + 1;
 
     await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [bonusAmount, userId]);
     await pool.query('UPDATE protocol_stats SET total_mined = total_mined + $1 WHERE id = 1', [bonusAmount]);
@@ -248,11 +247,11 @@ app.post('/api/mine/claim', async (req, res) => {
   }
 });
 
-// ADMIN API: Post Announcement
+// ADMIN API
 app.post('/api/admin/announcement', async (req, res) => {
   const { adminKey, title, content } = req.body;
   if (adminKey !== 'NEXIS_ADMIN_2026') {
-    return res.status(403).json({ error: 'Unauthorized: Invalid Admin Secret Passkey' });
+    return res.status(403).json({ error: 'Unauthorized' });
   }
 
   try {
@@ -268,4 +267,4 @@ app.post('/api/admin/announcement', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
-        
+  

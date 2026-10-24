@@ -9,7 +9,7 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Robust database initialization ensuring all tables and columns exist
+// Database initialization with safe column additions
 async function initDb() {
   try {
     await pool.query(`
@@ -47,13 +47,16 @@ async function initDb() {
         start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         reward_rate NUMERIC(10, 4) NOT NULL,
-        ads_watched INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE
       );
+    `);
 
+    // Safely add ads_watched column if it doesn't exist yet
+    await pool.query(`
       ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;
     `);
-    console.log('Database tables verified/created successfully.');
+
+    console.log('Database tables and columns verified successfully.');
   } catch (err) {
     console.error('DB Init Error:', err);
   }
@@ -248,7 +251,6 @@ app.post('/api/mine/claim', async (req, res) => {
 // ADMIN API: Post Announcement
 app.post('/api/admin/announcement', async (req, res) => {
   const { adminKey, title, content } = req.body;
-  
   if (adminKey !== 'NEXIS_ADMIN_2026') {
     return res.status(403).json({ error: 'Unauthorized: Invalid Admin Secret Passkey' });
   }

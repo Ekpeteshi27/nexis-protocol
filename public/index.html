@@ -97,7 +97,8 @@
                 </div>
             </div>
 
-            <button class="btn-admin" onclick="toggleAdminPanel()">🛠 Admin Portal Access</button>
+            <!-- Only shown if user is admin -->
+            <button id="btn-admin-access" class="btn-admin hidden" onclick="toggleAdminPanel()">🛠 Admin Portal Access</button>
         </div>
 
         <!-- Secret Admin Portal -->
@@ -137,6 +138,11 @@
 
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
+
+                // Check if user is admin to show the admin button
+                if (currentUser.is_admin) {
+                    document.getElementById('btn-admin-access').classList.remove('hidden');
+                }
 
                 if (data.activeSession) {
                     activeSession = data.activeSession;

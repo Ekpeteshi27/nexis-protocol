@@ -3,43 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexis Protocol Miner</title>
+    <title>Nexis Protocol ($NEXIS) Mining</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding: 20px; }
-        .card { background: #1e293b; max-width: 400px; margin: 40px auto; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
-        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 5px; }
-        button:hover { background: #2563eb; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #090d16; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
+        .container { width: 100%; max-width: 420px; background: #131c2e; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); }
+        
+        h1 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 6px; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 13px; text-align: center; color: #94a3b8; margin-bottom: 24px; }
+
+        .card { background: #1a263d; border-radius: 14px; padding: 18px; margin-bottom: 16px; border: 1px solid #2a3954; }
+        
+        input { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 12px; outline: none; }
+        input:focus { border-color: #38bdf8; }
+
+        button { width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        button:active { opacity: 0.85; }
+        
+        .btn-claim { background: linear-gradient(135deg, #10b981, #059669); margin-top: 10px; }
+
+        .balance-box { text-align: center; padding: 10px 0; }
+        .balance-value { font-size: 32px; font-weight: 800; color: #38bdf8; margin: 4px 0; }
+        .balance-label { font-size: 12px; text-align: uppercase; letter-spacing: 1px; color: #94a3b8; }
+
+        .stat-row { display: flex; justify-content: space-between; font-size: 14px; margin: 8px 0; color: #cbd5e1; }
+        .stat-value { font-weight: 600; color: #fff; }
+
         .hidden { display: none; }
+        #status { font-size: 13px; text-align: center; margin-top: 14px; color: #38bdf8; min-height: 20px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Nexis Protocol ($NEXIS)</h2>
+    <div class="container">
+        <h1>Nexis Protocol</h1>
+        <p class="subtitle">Decentralized Cloud Mining Experience</p>
         
-        <div id="login-section">
-            <p>Enter your Gmail or Email to Start</p>
-            <input type="email" id="email" placeholder="yourname@gmail.com">
-            <br>
-            <button onclick="registerUser()">Connect / Login</button>
+        <!-- Login Section -->
+        <div id="login-section" class="card">
+            <p style="font-size: 14px; margin-bottom: 10px; color: #cbd5e1;">Sign in with your Email</p>
+            <input type="email" id="email" placeholder="name@gmail.com">
+            <button onclick="registerUser()">Access Dashboard</button>
         </div>
 
+        <!-- Dashboard Section -->
         <div id="dashboard-section" class="hidden">
-            <p><strong>Email:</strong> <span id="disp-email"></span></p>
-            <p><strong>Balance:</strong> <span id="disp-balance">0.0000</span> $NEXIS</p>
-            <p><strong>Current Rate:</strong> <span id="disp-rate">2.0</span> / hr</p>
-            <button onclick="startMining()">Start Mining</button>
-            <button onclick="claimTokens()">Claim Rewards</button>
+            <div class="card balance-box">
+                <div class="balance-label">Total Mined Balance</div>
+                <div class="balance-value"><span id="disp-balance">0.0000</span> <span style="font-size: 18px; color: #818cf8;">$NEXIS</span></div>
+            </div>
+
+            <div class="card">
+                <div class="stat-row">
+                    <span>Account Email:</span>
+                    <span class="stat-value" id="disp-email" style="font-size: 12px;"></span>
+                </div>
+                <div class="stat-row">
+                    <span>Mining Rate:</span>
+                    <span class="stat-value"><span id="disp-rate">2.0</span> $NEXIS/hr</span>
+                </div>
+                <div class="stat-row">
+                    <span>Session Status:</span>
+                    <span class="stat-value" id="disp-status-text" style="color: #fbbf24;">Ready to Mine</span>
+                </div>
+            </div>
+
+            <button onclick="startMining()">Start Mining Session</button>
+            <button class="btn-claim" onclick="claimTokens()">Claim Rewards</button>
         </div>
-        <p id="status" style="margin-top: 15px; font-size: 14px; color: #38bdf8;"></p>
+
+        <p id="status"></p>
     </div>
 
     <script>
         let currentUser = null;
 
         async function registerUser() {
-            const emailInput = document.getElementById('email').value;
-            if (!emailInput) return alert('Enter a valid email address');
+            const emailInput = document.getElementById('email').value.trim();
+            if (!emailInput || !emailInput.includes('@')) return alert('Please enter a valid email address');
 
             const res = await fetch('/api/user/register', {
                 method: 'POST',
@@ -54,7 +94,7 @@
                 document.getElementById('disp-rate').innerText = data.currentRate;
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
-                document.getElementById('status').innerText = 'Connected successfully!';
+                document.getElementById('status').innerText = 'Welcome to Nexis Protocol!';
             } else {
                 alert(data.error);
             }
@@ -67,7 +107,13 @@
                 body: JSON.stringify({ userId: currentUser.id })
             });
             const data = await res.json();
-            document.getElementById('status').innerText = data.message || data.error;
+            if (res.ok) {
+                document.getElementById('disp-status-text').innerText = 'Mining Active ⚡';
+                document.getElementById('disp-status-text').style.color = '#10b981';
+                document.getElementById('status').innerText = 'Mining session started successfully!';
+            } else {
+                document.getElementById('status').innerText = data.message || data.error;
+            }
         }
 
         async function claimTokens() {
@@ -80,7 +126,8 @@
             if (res.ok && data.claimed > 0) {
                 currentUser.balance = parseFloat(currentUser.balance) + parseFloat(data.claimed);
                 document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
-                document.getElementById('status').innerText = `Claimed ${data.claimed} $NEXIS!`;
+                document.getElementById('disp-rate').innerText = data.nextRewardRate;
+                document.getElementById('status').innerText = `Successfully claimed ${parseFloat(data.claimed).toFixed(4)} $NEXIS!`;
             } else {
                 document.getElementById('status').innerText = data.message || data.error;
             }

@@ -3,40 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexis Protocol ($NEXIS) Mining</title>
+    <title>Nexis Protocol ($NEXIS) - 12H Mining</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: #090d16; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
-        .container { width: 100%; max-width: 420px; background: #131c2e; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); }
+        .container { width: 100%; max-width: 440px; background: #131c2e; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); }
         
-        h1 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 6px; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 13px; text-align: center; color: #94a3b8; margin-bottom: 24px; }
+        h1 { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 4px; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 13px; text-align: center; color: #94a3b8; margin-bottom: 20px; }
 
-        .card { background: #1a263d; border-radius: 14px; padding: 18px; margin-bottom: 16px; border: 1px solid #2a3954; }
+        .card { background: #1a263d; border-radius: 14px; padding: 16px; margin-bottom: 14px; border: 1px solid #2a3954; }
         
         input { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 12px; outline: none; }
         input:focus { border-color: #38bdf8; }
 
-        button { width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        button { width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 6px; }
         button:active { opacity: 0.85; }
-        
-        .btn-claim { background: linear-gradient(135deg, #10b981, #059669); margin-top: 10px; }
+        .btn-claim { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-disabled { background: #334155; cursor: not-allowed; color: #94a3b8; }
 
-        .balance-box { text-align: center; padding: 10px 0; }
-        .balance-value { font-size: 32px; font-weight: 800; color: #38bdf8; margin: 4px 0; }
-        .balance-label { font-size: 12px; text-align: uppercase; letter-spacing: 1px; color: #94a3b8; }
+        .balance-box { text-align: center; padding: 12px 0; }
+        .balance-value { font-size: 34px; font-weight: 800; color: #38bdf8; margin: 4px 0; }
+        .balance-label { font-size: 11px; text-align: uppercase; letter-spacing: 1.2px; color: #94a3b8; }
 
-        .stat-row { display: flex; justify-content: space-between; font-size: 14px; margin: 8px 0; color: #cbd5e1; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin: 6px 0; color: #cbd5e1; }
         .stat-value { font-weight: 600; color: #fff; }
 
+        /* Progress Bar */
+        .progress-container { background: #0f172a; border-radius: 8px; height: 10px; width: 100%; margin-top: 8px; overflow: hidden; border: 1px solid #334155; }
+        .progress-bar { background: linear-gradient(90deg, #38bdf8, #10b981); height: 100%; width: 0%; transition: width 0.4s ease; }
+
+        .timer-display { font-size: 20px; font-weight: 700; color: #fbbf24; text-align: center; margin: 8px 0; }
         .hidden { display: none; }
-        #status { font-size: 13px; text-align: center; margin-top: 14px; color: #38bdf8; min-height: 20px; }
+        #status { font-size: 13px; text-align: center; margin-top: 12px; color: #38bdf8; min-height: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Nexis Protocol</h1>
-        <p class="subtitle">Decentralized Cloud Mining Experience</p>
+        <p class="subtitle">12-Hour Cloud Mining Ecosystem</p>
         
         <!-- Login Section -->
         <div id="login-section" class="card">
@@ -49,26 +54,40 @@
         <div id="dashboard-section" class="hidden">
             <div class="card balance-box">
                 <div class="balance-label">Total Mined Balance</div>
-                <div class="balance-value"><span id="disp-balance">0.0000</span> <span style="font-size: 18px; color: #818cf8;">$NEXIS</span></div>
+                <div class="balance-value"><span id="disp-balance">0.0000</span> <span style="font-size: 16px; color: #818cf8;">$NEXIS</span></div>
             </div>
 
+            <!-- 12-Hour Mining Card -->
+            <div class="card" style="text-align: center;">
+                <div class="balance-label" id="session-title">Mining Session Status</div>
+                <div class="timer-display" id="timer">12:00:00</div>
+                <button id="btn-start" onclick="startMining()">Start 12H Mining Session</button>
+                <button id="btn-claim" class="btn-claim hidden" onclick="claimTokens()">Claim Rewards</button>
+            </div>
+
+            <!-- Network & Halving Stats -->
             <div class="card">
-                <div class="stat-row">
-                    <span>Account Email:</span>
-                    <span class="stat-value" id="disp-email" style="font-size: 12px;"></span>
-                </div>
                 <div class="stat-row">
                     <span>Mining Rate:</span>
                     <span class="stat-value"><span id="disp-rate">2.0</span> $NEXIS/hr</span>
                 </div>
                 <div class="stat-row">
-                    <span>Session Status:</span>
-                    <span class="stat-value" id="disp-status-text" style="color: #fbbf24;">Ready to Mine</span>
+                    <span>Global Mined:</span>
+                    <span class="stat-value"><span id="disp-total-mined">0</span> / 20M</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="halving-progress"></div>
                 </div>
             </div>
 
-            <button onclick="startMining()">Start Mining Session</button>
-            <button class="btn-claim" onclick="claimTokens()">Claim Rewards</button>
+            <!-- Referral Program Card -->
+            <div class="card">
+                <div class="stat-row" style="margin-bottom: 6px;">
+                    <span>Referral Link (+10% Boost):</span>
+                </div>
+                <input type="text" id="ref-link" readonly style="margin-bottom: 6px; font-size: 12px; text-align: center;" onclick="this.select()">
+                <button style="background: #475569; font-size: 13px; padding: 8px;" onclick="copyRefLink()">Copy Invite Link</button>
+            </div>
         </div>
 
         <p id="status"></p>
@@ -76,25 +95,49 @@
 
     <script>
         let currentUser = null;
+        let activeSession = null;
+        let timerInterval = null;
+
+        // Auto-detect referral code from URL query string ?ref=XYZ
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ref = urlParams.get('ref');
+            if (ref) localStorage.setItem('nexis_ref', ref);
+        };
 
         async function registerUser() {
             const emailInput = document.getElementById('email').value.trim();
             if (!emailInput || !emailInput.includes('@')) return alert('Please enter a valid email address');
 
+            const refCode = localStorage.getItem('nexis_ref') || null;
+
             const res = await fetch('/api/user/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: emailInput })
+                body: JSON.stringify({ email: emailInput, refCode })
             });
             const data = await res.json();
             if (res.ok) {
                 currentUser = data.user;
-                document.getElementById('disp-email').innerText = currentUser.email;
+                updateStatsUI(data.stats);
                 document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
                 document.getElementById('disp-rate').innerText = data.currentRate;
+                
+                // Set referral link
+                const refUrl = `${window.location.origin}?ref=${currentUser.referral_code}`;
+                document.getElementById('ref-link').value = refUrl;
+
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
-                document.getElementById('status').innerText = 'Welcome to Nexis Protocol!';
+
+                if (data.activeSession) {
+                    activeSession = data.activeSession;
+                    startCountdownTimer(new Date(activeSession.start_time));
+                    document.getElementById('btn-start').classList.add('hidden');
+                    document.getElementById('btn-claim').classList.remove('hidden');
+                } else {
+                    document.getElementById('timer').innerText = 'Ready to Mine';
+                }
             } else {
                 alert(data.error);
             }
@@ -108,9 +151,11 @@
             });
             const data = await res.json();
             if (res.ok) {
-                document.getElementById('disp-status-text').innerText = 'Mining Active ⚡';
-                document.getElementById('disp-status-text').style.color = '#10b981';
-                document.getElementById('status').innerText = 'Mining session started successfully!';
+                activeSession = data.session;
+                startCountdownTimer(new Date(activeSession.start_time));
+                document.getElementById('btn-start').classList.add('hidden');
+                document.getElementById('btn-claim').classList.remove('hidden');
+                document.getElementById('status').innerText = '12-Hour mining session started!';
             } else {
                 document.getElementById('status').innerText = data.message || data.error;
             }
@@ -123,14 +168,63 @@
                 body: JSON.stringify({ userId: currentUser.id })
             });
             const data = await res.json();
-            if (res.ok && data.claimed > 0) {
-                currentUser.balance = parseFloat(currentUser.balance) + parseFloat(data.claimed);
+            if (res.ok) {
+                currentUser.balance = parseFloat(data.newBalance);
                 document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
-                document.getElementById('disp-rate').innerText = data.nextRewardRate;
-                document.getElementById('status').innerText = `Successfully claimed ${parseFloat(data.claimed).toFixed(4)} $NEXIS!`;
+                updateStatsUI(data.stats);
+                document.getElementById('status').innerText = `Claimed ${parseFloat(data.claimed).toFixed(4)} $NEXIS!`;
+
+                if (data.sessionEnded) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').innerText = 'Session Expired';
+                    document.getElementById('btn-claim').classList.add('hidden');
+                    document.getElementById('btn-start').classList.remove('hidden');
+                    activeSession = null;
+                }
             } else {
                 document.getElementById('status').innerText = data.message || data.error;
             }
+        }
+
+        function startCountdownTimer(startTime) {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                const elapsedMs = now - startTime;
+                const totalDurationMs = 12 * 60 * 60 * 1000; // 12 hours
+                const remainingMs = totalDurationMs - elapsedMs;
+
+                if (remainingMs <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').innerText = '00:00:00 (Session Completed)';
+                    document.getElementById('session-title').innerText = 'Session Ended - Claim & Restart';
+                    return;
+                }
+
+                const hours = Math.floor((remainingMs / (1000 * 60 * 60)) % 12);
+                const minutes = Math.floor((remainingMs / 1000 / 60) % 60);
+                const seconds = Math.floor((remainingMs / 1000) % 60);
+
+                document.getElementById('timer').innerText = 
+                    `${String(Math.floor(remainingMs / (1000 * 60 * 60))).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function updateStatsUI(stats) {
+            const totalMined = parseFloat(stats.total_mined);
+            document.getElementById('disp-total-mined').innerText = totalMined.toFixed(0);
+            
+            // Progress toward 20M max cap
+            const progressPercent = Math.min((totalMined / 20000000) * 100, 100);
+            document.getElementById('halving-progress').style.width = `${progressPercent}%`;
+        }
+
+        function copyRefLink() {
+            const copyText = document.getElementById('ref-link');
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            alert('Referral link copied to clipboard!');
         }
     </script>
 </body>

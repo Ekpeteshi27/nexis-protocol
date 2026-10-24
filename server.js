@@ -10,7 +10,7 @@ app.use(express.json());
 // Serve the front-end dashboard
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Automatically create database tables on startup (using email instead of wallet)
+// Automatically create and update database tables on startup
 async function initDb() {
   try {
     await pool.query(`
@@ -27,10 +27,12 @@ async function initDb() {
 
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
         balance NUMERIC(20, 8) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
+      ALTER TABLE users DROP COLUMN IF EXISTS wallet_address;
 
       CREATE TABLE IF NOT EXISTS mining_sessions (
         id SERIAL PRIMARY KEY,
@@ -41,7 +43,7 @@ async function initDb() {
         is_active BOOLEAN DEFAULT TRUE
       );
     `);
-    console.log('Database tables initialized successfully!');
+    console.log('Database tables initialized and updated successfully!');
   } catch (err) {
     console.error('Error initializing database:', err);
   }
@@ -150,4 +152,4 @@ app.post('/api/mine/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
-      
+  

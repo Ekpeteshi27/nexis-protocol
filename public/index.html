@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexis Protocol Miner</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding: 20px; }
+        .card { background: #1e293b; max-width: 400px; margin: 40px auto; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 5px; }
+        button:hover { background: #2563eb; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Nexis Protocol ($NEXIS)</h2>
+        
+        <div id="login-section">
+            <p>Enter Wallet Address to Start</p>
+            <input type="text" id="wallet" placeholder="0xYourWalletAddress...">
+            <br>
+            <button onclick="registerUser()">Connect / Login</button>
+        </div>
+
+        <div id="dashboard-section" class="hidden">
+            <p><strong>Wallet:</strong> <span id="disp-wallet"></span></p>
+            <p><strong>Balance:</strong> <span id="disp-balance">0.0000</span> $NEXIS</p>
+            <p><strong>Current Rate:</strong> <span id="disp-rate">2.0</span> / hr</p>
+            <button onclick="startMining()">Start Mining</button>
+            <button onclick="claimTokens()">Claim Rewards</button>
+        </div>
+        <p id="status" style="margin-top: 15px; font-size: 14px; color: #38bdf8;"></p>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        async function registerUser() {
+            const wallet = document.getElementById('wallet').value;
+            if (!wallet) return alert('Enter a wallet address');
+
+            const res = await fetch('/api/user/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: wallet })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                currentUser = data.user;
+                document.getElementById('disp-wallet').innerText = currentUser.wallet_address;
+                document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
+                document.getElementById('disp-rate').innerText = data.currentRate;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('status').innerText = 'Connected successfully!';
+            } else {
+                alert(data.error);
+            }
+        }
+
+        async function startMining() {
+            const res = await fetch('/api/mine/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id })
+            });
+            const data = await res.json();
+            document.getElementById('status').innerText = data.message || data.error;
+        }
+
+        async function claimTokens() {
+            const res = await fetch('/api/mine/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id })
+            });
+            const data = await res.json();
+            if (res.ok && data.claimed > 0) {
+                currentUser.balance = parseFloat(currentUser.balance) + parseFloat(data.claimed);
+                document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
+                document.getElementById('status').innerText = `Claimed ${data.claimed} $NEXIS!`;
+            } else {
+                document.getElementById('status').innerText = data.message || data.error;
+            }
+        }
+    </script>
+</body>
+</html>
 

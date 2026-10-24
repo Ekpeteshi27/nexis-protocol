@@ -9,7 +9,7 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database Setup with Announcements & Admin Support
+// Robust database initialization ensuring all tables and columns exist
 async function initDb() {
   try {
     await pool.query(`
@@ -50,8 +50,10 @@ async function initDb() {
         ads_watched INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE
       );
+
+      ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;
     `);
-    console.log('Database initialized with Admin & Announcements feed.');
+    console.log('Database tables verified/created successfully.');
   } catch (err) {
     console.error('DB Init Error:', err);
   }
@@ -59,13 +61,11 @@ async function initDb() {
 
 initDb();
 
-// Halving Rate Logic (10 Billion Cap)
 async function getOrUpdateRewardRate() {
   const statsRes = await pool.query('SELECT total_mined FROM protocol_stats WHERE id = 1');
   const totalMined = parseFloat(statsRes.rows[0].total_mined);
 
   let currentRate = 2.0;
-
   if (totalMined >= 5000000000) currentRate = 0.25;
   else if (totalMined >= 2500000000) currentRate = 0.5;
   else if (totalMined >= 1000000000) currentRate = 1.0;
@@ -96,7 +96,6 @@ app.post('/api/user/register', async (req, res) => {
 
     const currentRate = await getOrUpdateRewardRate();
     
-    // Fetch latest active session
     const sessionRes = await pool.query(
       'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE ORDER BY start_time DESC LIMIT 1',
       [user.id]
@@ -114,7 +113,13 @@ app.post('/api/user/register', async (req, res) => {
     }
 
     const statsRes = await pool.query('SELECT * FROM protocol_stats WHERE id = 1');
-    const announcements = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 5');
+    
+    let announcements = { rows: [] };
+    try {
+      announcements = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 5');
+    } catch (e) {
+      console.log('Announcements table check:', e.message);
+    }
 
     res.json({ user, currentRate, activeSession, stats: statsRes.rows[0], announcements: announcements.rows });
   } catch (err) {
@@ -244,7 +249,6 @@ app.post('/api/mine/claim', async (req, res) => {
 app.post('/api/admin/announcement', async (req, res) => {
   const { adminKey, title, content } = req.body;
   
-  // Simple Admin Secret Passkey
   if (adminKey !== 'NEXIS_ADMIN_2026') {
     return res.status(403).json({ error: 'Unauthorized: Invalid Admin Secret Passkey' });
   }
@@ -260,19 +264,6 @@ app.post('/api/admin/announcement', async (req, res) => {
   }
 });
 
-// ADMIN API: Fetch All Registered Users
-app.post('/api/admin/users', async (req, res) => {
-  const { adminKey } = req.body;
-  if (adminKey !== 'NEXIS_ADMIN_2026') return res.status(403).json({ error: 'Unauthorized' });
-
-  try {
-    const usersRes = await pool.query('SELECT id, email, balance, created_at FROM users ORDER BY id DESC LIMIT 50');
-    res.json(usersRes.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
-                                   
+        

@@ -29,7 +29,6 @@ async function initDb() {
         balance NUMERIC(20, 8) DEFAULT 0,
         email VARCHAR(255) UNIQUE NOT NULL,
         referral_code VARCHAR(50) UNIQUE,
-        is_admin BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -50,7 +49,10 @@ async function initDb() {
       );
     `);
 
+    // Safely add missing columns to legacy tables
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;`).catch(() => {});
     await pool.query(`ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;`).catch(() => {});
+
     console.log('Database verified successfully.');
   } catch (err) {
     console.error('DB Init Error:', err);
@@ -81,7 +83,6 @@ app.post('/api/user/register', async (req, res) => {
     let userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     let user;
     
-    // Automatically grant admin rights to your specific email address
     const isAdminEmail = email.toLowerCase() === 'justiceaugustine942@gmail.com';
 
     if (userRes.rows.length === 0) {
@@ -89,13 +90,20 @@ app.post('/api/user/register', async (req, res) => {
       const insertRes = await pool.query(
         'INSERT INTO users (email, referral_code, is_admin) VALUES ($1, $2, $3) RETURNING *',
         [email, generatedRef, isAdminEmail]
-      );
+      ).catch(async () => {
+        // Fallback if is_admin column fails for any reason
+        const fallbackRes = await pool.query(
+          'INSERT INTO users (email, referral_code) VALUES ($1, $2) RETURNING *',
+          [email, generatedRef]
+        );
+        return fallbackRes;
+      });
       user = insertRes.rows[0];
       await pool.query('UPDATE protocol_stats SET total_users = total_users + 1 WHERE id = 1');
     } else {
       user = userRes.rows[0];
       if (isAdminEmail && !user.is_admin) {
-        await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [user.id]);
+        await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [user.id]).catch(() => {});
         user.is_admin = true;
       }
     }

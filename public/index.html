@@ -18,14 +18,14 @@
         <h2>Nexis Protocol ($NEXIS)</h2>
         
         <div id="login-section">
-            <p>Enter Wallet Address to Start</p>
-            <input type="text" id="wallet" placeholder="0xYourWalletAddress...">
+            <p>Enter your Gmail or Email to Start</p>
+            <input type="email" id="email" placeholder="yourname@gmail.com">
             <br>
             <button onclick="registerUser()">Connect / Login</button>
         </div>
 
         <div id="dashboard-section" class="hidden">
-            <p><strong>Wallet:</strong> <span id="disp-wallet"></span></p>
+            <p><strong>Email:</strong> <span id="disp-email"></span></p>
             <p><strong>Balance:</strong> <span id="disp-balance">0.0000</span> $NEXIS</p>
             <p><strong>Current Rate:</strong> <span id="disp-rate">2.0</span> / hr</p>
             <button onclick="startMining()">Start Mining</button>
@@ -38,18 +38,18 @@
         let currentUser = null;
 
         async function registerUser() {
-            const wallet = document.getElementById('wallet').value;
-            if (!wallet) return alert('Enter a wallet address');
+            const emailInput = document.getElementById('email').value;
+            if (!emailInput) return alert('Enter a valid email address');
 
             const res = await fetch('/api/user/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ walletAddress: wallet })
+                body: JSON.stringify({ email: emailInput })
             });
             const data = await res.json();
             if (res.ok) {
                 currentUser = data.user;
-                document.getElementById('disp-wallet').innerText = currentUser.wallet_address;
+                document.getElementById('disp-email').innerText = currentUser.email;
                 document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
                 document.getElementById('disp-rate').innerText = data.currentRate;
                 document.getElementById('login-section').classList.add('hidden');
@@ -88,4 +88,3 @@
     </script>
 </body>
 </html>
-

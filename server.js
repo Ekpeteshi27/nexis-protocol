@@ -1,294 +1,157 @@
 const express = require('express');
-const cors = require('cors');
+const Database = require('better-sqlite3');
 const path = require('path');
-const pool = require('./db');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const db = new Database('nexis.db');
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-async function initDb() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS protocol_stats (
-        id SERIAL PRIMARY KEY,
-        total_mined NUMERIC(20, 8) DEFAULT 0,
-        total_users INT DEFAULT 0,
-        current_reward_rate NUMERIC(10, 4) DEFAULT 2.0000,
-        max_supply NUMERIC(20, 8) DEFAULT 10000000000
-      );
-      
-      INSERT INTO protocol_stats (id, total_mined, total_users, current_reward_rate, max_supply)
-      SELECT 1, 0, 0, 2.0000, 10000000000
-      WHERE NOT EXISTS (SELECT 1 FROM protocol_stats WHERE id = 1);
+// Initialize Database Tables
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE,
+        balance REAL DEFAULT 0,
+        referral_code TEXT UNIQUE,
+        referred_by TEXT,
+        is_admin INTEGER DEFAULT 0
+    );
 
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        balance NUMERIC(20, 8) DEFAULT 0,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS mining_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        start_time TEXT,
+        ads_watched INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active'
+    );
 
-      CREATE TABLE IF NOT EXISTS announcements (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS announcements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        content TEXT,
+        created_at TEXT
+    );
+`);
 
-      CREATE TABLE IF NOT EXISTS mining_sessions (
-        id SERIAL PRIMARY KEY,
-        user_id INT REFERENCES users(id) ON DELETE CASCADE,
-        start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        reward_rate NUMERIC(10, 4) NOT NULL,
-        is_active BOOLEAN DEFAULT TRUE
-      );
-    `);
-
-    // Safely add missing columns to legacy tables
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;`).catch(() => {});
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(50);`).catch(() => {});
-    await pool.query(`ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;`).catch(() => {});
-
-    console.log('Database verified successfully.');
-  } catch (err) {
-    console.error('DB Init Error:', err);
-  }
+// Helper to generate unique referral code
+function generateRefCode() {
+    return 'NX' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-initDb();
+// Register / Login Route with Referral Support
+app.post('/api/user/register', (req, res) => {
+    const { email, referredBy } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
 
-async function getOrUpdateRewardRate() {
-  const statsRes = await pool.query('SELECT total_mined FROM protocol_stats WHERE id = 1');
-  const totalMined = parseFloat(statsRes.rows[0].total_mined);
+    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
 
-  let currentRate = 2.0;
-  if (totalMined >= 5000000000) currentRate = 0.25;
-  else if (totalMined >= 2500000000) currentRate = 0.5;
-  else if (totalMined >= 1000000000) currentRate = 1.0;
+    if (!user) {
+        let refCode = generateRefCode();
+        while (db.prepare('SELECT * FROM users WHERE referral_code = ?').get(refCode)) {
+            refCode = generateRefCode();
+        }
 
-  await pool.query('UPDATE protocol_stats SET current_reward_rate = $1 WHERE id = 1', [currentRate]);
-  return currentRate;
-}
+        const isAdmin = email === 'admin@nexis.com' ? 1 : 0;
+        let startingBalance = 0;
 
-// User Register / Login
-app.post('/api/user/register', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
+        // If user registered via a referral link, reward the referrer (+10 NEXIS)
+        if (referredBy && referredBy !== refCode) {
+            const referrer = db.prepare('SELECT * FROM users WHERE referral_code = ?').get(referredBy);
+            if (referrer) {
+                db.prepare('UPDATE users SET balance = balance + 10 WHERE id = ?').run(referrer.id);
+            }
+        }
 
-  try {
-    let userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    let user;
-    
-    const isAdminEmail = email.toLowerCase() === 'justiceaugustine942@gmail.com';
+        const info = db.prepare(
+            'INSERT INTO users (email, balance, referral_code, referred_by, is_admin) VALUES (?, ?, ?, ?, ?)'
+        ).run(email, startingBalance, refCode, referredBy || null, isAdmin);
 
-    if (userRes.rows.length === 0) {
-      const generatedRef = 'NEXIS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      
-      try {
-        const insertRes = await pool.query(
-          'INSERT INTO users (email, referral_code, is_admin) VALUES ($1, $2, $3) RETURNING *',
-          [email, generatedRef, isAdminEmail]
-        );
-        user = insertRes.rows[0];
-      } catch (insertErr) {
-        // Fallback if referral_code or is_admin column is failing
-        const fallbackRes = await pool.query(
-          'INSERT INTO users (email) VALUES ($1) RETURNING *',
-          [email]
-        );
-        user = fallbackRes.rows[0];
-      }
-
-      await pool.query('UPDATE protocol_stats SET total_users = total_users + 1 WHERE id = 1');
-    } else {
-      user = userRes.rows[0];
-      if (isAdminEmail && !user.is_admin) {
-        await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [user.id]).catch(() => {});
-        user.is_admin = true;
-      }
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
     }
 
-    const currentRate = await getOrUpdateRewardRate();
-    
-    let sessionRes = await pool.query(
-      'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE ORDER BY start_time DESC LIMIT 1',
-      [user.id]
-    );
-
-    let activeSession = null;
-    if (sessionRes.rows.length > 0) {
-      const sess = sessionRes.rows[0];
-      const elapsedHours = (new Date() - new Date(sess.start_time)) / (1000 * 60 * 60);
-      if (elapsedHours >= 12) {
-        await pool.query('UPDATE mining_sessions SET is_active = FALSE WHERE id = $1', [sess.id]);
-      } else {
-        activeSession = sess;
-      }
-    }
-
-    const statsRes = await pool.query('SELECT * FROM protocol_stats WHERE id = 1');
-    
-    let announcements = { rows: [] };
-    try {
-      announcements = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 5');
-    } catch (e) {}
-
-    res.json({ user, currentRate, activeSession, stats: statsRes.rows[0], announcements: announcements.rows });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Start 12-Hour Session
-app.post('/api/mine/start', async (req, res) => {
-  const { userId } = req.body;
-  try {
-    const activeSession = await pool.query(
-      'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE',
-      [userId]
-    );
-
-    if (activeSession.rows.length > 0) {
-      return res.status(400).json({ message: 'Mining session already active!' });
-    }
-
-    const currentRate = await getOrUpdateRewardRate();
-    const newSession = await pool.query(
-      'INSERT INTO mining_sessions (user_id, reward_rate, ads_watched) VALUES ($1, $2, 0) RETURNING *',
-      [userId, currentRate]
-    ).catch(async () => {
-      return await pool.query(
-        'INSERT INTO mining_sessions (user_id, reward_rate) VALUES ($1, $2) RETURNING *',
-        [userId, currentRate]
-      );
-    });
-
-    res.json({ message: '12-Hour mining session started!', session: newSession.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Watch Ad Bonus
-app.post('/api/mine/watch-ad', async (req, res) => {
-  const { userId } = req.body;
-  try {
-    let sessionRes = await pool.query(
-      'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE',
-      [userId]
-    );
-
-    if (sessionRes.rows.length === 0) {
-      return res.status(400).json({ error: 'Start a mining session first to watch bonus ads!' });
-    }
-
-    const session = sessionRes.rows[0];
-    const currentAdsWatched = session.ads_watched || 0;
-
-    if (currentAdsWatched >= 2) {
-      return res.status(400).json({ error: 'Maximum 2 bonus ads reached for this session.' });
-    }
-
-    const bonusAmount = 5.0000;
-    const newAdCount = currentAdsWatched + 1;
-
-    await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [bonusAmount, userId]);
-    await pool.query('UPDATE protocol_stats SET total_mined = total_mined + $1 WHERE id = 1', [bonusAmount]);
-    
-    try {
-      await pool.query('UPDATE mining_sessions SET ads_watched = $1 WHERE id = $2', [newAdCount, session.id]);
-    } catch (e) {}
-
-    const userRes = await pool.query('SELECT balance FROM users WHERE id = $1', [userId]);
+    const activeSession = db.prepare("SELECT * FROM mining_sessions WHERE user_id = ? AND status = 'active'").get(user.id);
+    const stats = db.prepare("SELECT SUM(balance) as total_mined FROM users").get() || { total_mined: 0 };
+    const announcements = db.prepare("SELECT * FROM announcements ORDER BY id DESC LIMIT 5").all();
 
     res.json({
-      message: `Bonus +${bonusAmount} $NEXIS awarded successfully!`,
-      adsWatched: newAdCount,
-      newBalance: userRes.rows[0].balance
+        user,
+        activeSession,
+        currentRate: '2.0',
+        stats: { total_mined: stats.total_mined || 61, max_supply: 10000000000 },
+        announcements
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
-// Claim Rewards
-app.post('/api/mine/claim', async (req, res) => {
-  const { userId } = req.body;
-  try {
-    const sessionRes = await pool.query(
-      'SELECT * FROM mining_sessions WHERE user_id = $1 AND is_active = TRUE',
-      [userId]
-    );
+// Start Mining Session
+app.post('/api/mine/start', (req, res) => {
+    const { userId } = req.body;
+    const active = db.prepare("SELECT * FROM mining_sessions WHERE user_id = ? AND status = 'active'").get(userId);
+    if (active) return res.status(400).json({ error: 'Active session already exists' });
 
-    if (sessionRes.rows.length === 0) {
-      return res.status(404).json({ error: 'No active mining session found' });
+    const startTime = new Date().toISOString();
+    db.prepare('INSERT INTO mining_sessions (user_id, start_time, ads_watched, status) VALUES (?, ?, 0, ?)')
+      .run(userId, startTime, 'active');
+
+    res.json({ message: 'Mining session started successfully' });
+});
+
+// Claim Tokens
+app.post('/api/mine/claim', (req, res) => {
+    const { userId } = req.body;
+    const session = db.prepare("SELECT * FROM mining_sessions WHERE user_id = ? AND status = 'active'").get(userId);
+    if (!session) return res.status(400).json({ error: 'No active session found' });
+
+    const startTime = new Date(session.start_time).getTime();
+    const now = Date.now();
+    const hoursElapsed = (now - startTime) / (1000 * 60 * 60);
+
+    if (hoursElapsed < 12) {
+        return res.status(400).json({ error: '12-hour session is not yet complete.' });
     }
 
-    const session = sessionRes.rows[0];
-    const now = new Date();
-    const startTime = new Date(session.start_time);
-    const lastClaimed = new Date(session.last_claimed_at);
+    const earned = 12 * 2.0;
+    db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(earned, userId);
+    db.prepare("UPDATE mining_sessions SET status = 'completed' WHERE id = ?").run(session.id);
 
-    let hoursElapsed = (now - lastClaimed) / (1000 * 60 * 60);
-    const totalSessionHours = (now - startTime) / (1000 * 60 * 60);
+    res.json({ message: `Successfully claimed ${earned} $NEXIS!` });
+});
 
-    let sessionEnded = false;
-    if (totalSessionHours >= 12) {
-      const remainingAllowedHours = 12 - ((lastClaimed - startTime) / (1000 * 60 * 60));
-      hoursElapsed = remainingAllowedHours > 0 ? Math.min(hoursElapsed, remainingAllowedHours) : 0;
-      sessionEnded = true;
+// Watch Ad Endpoint (Monetag Direct Link Rewards)
+app.post('/api/mine/watch-ad', (req, res) => {
+    const { userId } = req.body;
+    const session = db.prepare("SELECT * FROM mining_sessions WHERE user_id = ? AND status = 'active'").get(userId);
+    if (!session) return res.status(400).json({ error: 'Start an active mining session first to watch ads.' });
+
+    if (session.ads_watched >= 2) {
+        return res.status(400).json({ error: 'Maximum ads watched for this session (2/2).' });
     }
 
-    const earnedTokens = hoursElapsed * parseFloat(session.reward_rate);
+    const newAdsWatched = session.ads_watched + 1;
+    db.prepare('UPDATE mining_sessions SET ads_watched = ? WHERE id = ?').run(newAdsWatched, session.id);
+    db.prepare('UPDATE users SET balance = balance + 5 WHERE id = ?').run(userId);
 
-    if (earnedTokens > 0) {
-      await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [earnedTokens, userId]);
-      await pool.query('UPDATE protocol_stats SET total_mined = total_mined + $1 WHERE id = 1', [earnedTokens]);
-    }
-
-    if (sessionEnded) {
-      await pool.query('UPDATE mining_sessions SET is_active = FALSE WHERE id = $1', [session.id]);
-    } else {
-      await pool.query('UPDATE mining_sessions SET last_claimed_at = CURRENT_TIMESTAMP WHERE id = $1', [session.id]);
-    }
-
-    const statsRes = await pool.query('SELECT * FROM protocol_stats WHERE id = 1');
-    const userRes = await pool.query('SELECT balance FROM users WHERE id = $1', [userId]);
+    const updatedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
 
     res.json({
-      message: sessionEnded ? '12-Hour Session Completed! Restart to continue.' : 'Tokens claimed!',
-      claimed: earnedTokens.toFixed(4),
-      newBalance: userRes.rows[0].balance,
-      sessionEnded,
-      stats: statsRes.rows[0]
+        message: 'Ad watched successfully! +5 $NEXIS added.',
+        newBalance: updatedUser.balance,
+        adsWatched: newAdsWatched
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
-// ADMIN API
-app.post('/api/admin/announcement', async (req, res) => {
-  const { adminKey, title, content } = req.body;
-  if (adminKey !== 'NEXIS_ADMIN_2026') {
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
+// Admin Announcement Route
+app.post('/api/admin/announcement', (req, res) => {
+    const { adminKey, title, content } = req.body;
+    if (adminKey !== 'NEXIS_ADMIN_2026') return res.status(403).json({ error: 'Unauthorized' });
 
-  try {
-    const newAnn = await pool.query(
-      'INSERT INTO announcements (title, content) VALUES ($1, $2) RETURNING *',
-      [title, content]
-    );
-    res.json({ message: 'Announcement published successfully!', announcement: newAnn.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const createdAt = new Date().toISOString();
+    db.prepare('INSERT INTO announcements (title, content, created_at) VALUES (?, ?, ?)').run(title, content, createdAt);
+
+    res.json({ message: 'Announcement posted successfully' });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
-        
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+      

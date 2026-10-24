@@ -225,10 +225,11 @@
             </div>
         </div>
 
-        <!-- Referral Code Display -->
+        <!-- Referral Link Display -->
         <div class="stat-box" style="margin-top: 16px;">
-            <div class="stat-label">Your Referral Code</div>
-            <div class="stat-value" id="disp-ref-code" style="font-size: 16px; letter-spacing: 1px;">-</div>
+            <div class="stat-label">Your Referral Link</div>
+            <div class="stat-value" id="disp-ref-link" style="font-size: 13px; word-break: break-all; margin-bottom: 8px; color: var(--text);">-</div>
+            <button class="btn" style="padding: 8px; font-size: 13px; margin-bottom: 0;" onclick="copyReferralLink()">📋 Copy Invite Link</button>
         </div>
 
         <!-- Announcements Section -->
@@ -263,17 +264,27 @@
     let currentUser = null;
     let timerInterval = null;
 
+    // Capture referral code from URL on load and save locally
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            localStorage.setItem('nexis_ref', refCode);
+        }
+    });
+
     async function login() {
         const email = document.getElementById('email').value;
         if (!email) return alert('Please enter an email');
 
+        const referredBy = localStorage.getItem('nexis_ref') || null;
         document.getElementById('status').innerText = 'Authenticating...';
 
         try {
             const res = await fetch('/api/user/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email, referredBy })
             });
 
             const data = await res.json();
@@ -294,7 +305,10 @@
     function updateUI(data) {
         document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
         document.getElementById('disp-rate').innerText = `${data.currentRate}/hr`;
-        document.getElementById('disp-ref-code').innerText = currentUser.referral_code || 'N/A';
+        
+        // Display full referral link
+        const inviteLink = currentUser.referral_code ? `${window.location.origin}/?ref=${currentUser.referral_code}` : 'N/A';
+        document.getElementById('disp-ref-link').innerText = inviteLink;
 
         // Check Admin Status
         if (currentUser.is_admin) {
@@ -332,6 +346,17 @@
             document.getElementById('btn-claim').classList.add('hidden');
             document.getElementById('session-timer').innerText = 'No active mining session.';
         }
+    }
+
+    function copyReferralLink() {
+        if (!currentUser || !currentUser.referral_code) return alert('Referral code not available.');
+        const inviteLink = `${window.location.origin}/?ref=${currentUser.referral_code}`;
+        
+        navigator.clipboard.writeText(inviteLink).then(() => {
+            alert('Invite link copied to clipboard!');
+        }).catch(err => {
+            alert('Failed to copy link.');
+        });
     }
 
     function startTimer(startTimeStr) {
@@ -390,7 +415,6 @@
         if (!currentUser) return;
         document.getElementById('status').innerText = 'Opening sponsor ad...';
 
-        // 1. Open your Monetag Direct Link in a new tab
         const adWindow = window.open('https://uplcm.com/4/12113413', '_blank');
 
         if (!adWindow) {
@@ -398,7 +422,6 @@
             return;
         }
 
-        // 2. Call server backend to grant the +5 $NEXIS reward
         try {
             const res = await fetch('/api/mine/watch-ad', {
                 method: 'POST',
@@ -463,4 +486,5 @@
     }
 </script>
 </body>
-</html>
+    </html>
+    

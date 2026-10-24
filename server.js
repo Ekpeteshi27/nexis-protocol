@@ -10,7 +10,7 @@ app.use(express.json());
 // Serve the front-end dashboard
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Automatically create database tables on startup (No shell needed!)
+// Automatically create database tables on startup (using email instead of wallet)
 async function initDb() {
   try {
     await pool.query(`
@@ -27,7 +27,7 @@ async function initDb() {
 
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        wallet_address VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
         balance NUMERIC(20, 8) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -69,17 +69,17 @@ async function getOrUpdateRewardRate() {
   return currentRate;
 }
 
-// 1. User Register / Login
+// 1. User Email Registration / Login
 app.post('/api/user/register', async (req, res) => {
-  const { walletAddress } = req.body;
-  if (!walletAddress) return res.status(400).json({ error: 'Wallet address required' });
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email address required' });
 
   try {
-    let userRes = await pool.query('SELECT * FROM users WHERE wallet_address = $1', [walletAddress]);
+    let userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (userRes.rows.length === 0) {
       userRes = await pool.query(
-        'INSERT INTO users (wallet_address) VALUES ($1) RETURNING *',
-        [walletAddress]
+        'INSERT INTO users (email) VALUES ($1) RETURNING *',
+        [email]
       );
       await pool.query('UPDATE protocol_stats SET total_users = total_users + 1 WHERE id = 1');
     }
@@ -150,3 +150,4 @@ app.post('/api/mine/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
+      

@@ -3,204 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexis Protocol - 10 Billion $NEXIS Mining</title>
+    
+    <!-- Monetag Site Verification Tag -->
+    <meta name="monetag" content="c59ddb312b27e171656d28f9aee7f846">
+
+    <title>Nexis Protocol - Cloud Mining</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #090d16; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
-        .container { width: 100%; max-width: 440px; background: #131c2e; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); }
-        
-        h1 { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 4px; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 13px; text-align: center; color: #94a3b8; margin-bottom: 20px; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
 
-        .card { background: #1a263d; border-radius: 14px; padding: 16px; margin-bottom: 14px; border: 1px solid #2a3954; }
-        
-        input, textarea { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 12px; outline: none; }
-        input:focus, textarea:focus { border-color: #38bdf8; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-        button { width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 6px; }
-        button:active { opacity: 0.85; }
-        .btn-claim { background: linear-gradient(135deg, #10b981, #059669); }
-        .btn-ad { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .btn-admin { background: linear-gradient(135deg, #ef4444, #dc2626); margin-top: 15px; font-size: 12px; padding: 8px; }
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-        .balance-box { text-align: center; padding: 12px 0; }
-        .balance-value { font-size: 34px; font-weight: 800; color: #38bdf8; margin: 4px 0; }
-        .balance-label { font-size: 11px; text-align: uppercase; letter-spacing: 1.2px; color: #94a3b8; }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
 
-        .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin: 6px 0; color: #cbd5e1; }
-        .stat-value { font-weight: 600; color: #fff; }
+        h1, h2, h3 {
+            margin-top: 0;
+            text-align: center;
+        }
 
-        .progress-container { background: #0f172a; border-radius: 8px; height: 10px; width: 100%; margin-top: 8px; overflow: hidden; border: 1px solid #334155; }
-        .progress-bar { background: linear-gradient(90deg, #38bdf8, #10b981); height: 100%; width: 0%; transition: width 0.4s ease; }
+        .title {
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
 
-        .timer-display { font-size: 20px; font-weight: 700; color: #fbbf24; text-align: center; margin: 8px 0; }
-        .announcement-box { background: #0f172a; padding: 10px; border-radius: 8px; font-size: 12px; border-left: 3px solid #38bdf8; margin-top: 8px; }
-        
-        .hidden { display: none; }
-        #status { font-size: 13px; text-align: center; margin-top: 12px; color: #38bdf8; min-height: 20px; }
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: #000;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-box {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #334155;
+            border-radius: 8px;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #status {
+            text-align: center;
+            font-size: 14px;
+            color: var(--warning);
+            margin-top: 10px;
+        }
+
+        .announcement {
+            background: #0f172a;
+            border-left: 4px solid var(--primary);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Nexis Protocol</h1>
-        <p class="subtitle">10 Billion Total Supply Cloud Mining</p>
-        
-        <!-- Login Section -->
-        <div id="login-section" class="card">
-            <p style="font-size: 14px; margin-bottom: 10px; color: #cbd5e1;">Sign in with Gmail / Email</p>
-            <input type="email" id="email" placeholder="name@gmail.com">
-            <button onclick="registerUser()">Access Dashboard</button>
+
+<div class="container">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="card">
+        <h1 class="title">Nexis Protocol</h1>
+        <p style="text-align: center; color: var(--text-muted); font-size: 14px;">Next-Gen Cloud Mining</p>
+        <div class="input-group">
+            <label for="email">Enter Email to Access Dashboard</label>
+            <input type="email" id="email" placeholder="user@example.com">
         </div>
-
-        <!-- Dashboard Section -->
-        <div id="dashboard-section" class="hidden">
-            <!-- Official Announcements Feed -->
-            <div class="card">
-                <div class="balance-label">📢 Protocol Updates</div>
-                <div id="announcements-feed">
-                    <p style="font-size: 12px; color: #94a3b8; margin-top: 6px;">No announcements posted yet.</p>
-                </div>
-            </div>
-
-            <div class="card balance-box">
-                <div class="balance-label">Total Mined Balance</div>
-                <div class="balance-value"><span id="disp-balance">0.0000</span> <span style="font-size: 16px; color: #818cf8;">$NEXIS</span></div>
-            </div>
-
-            <!-- 12-Hour Mining Card -->
-            <div class="card" style="text-align: center;">
-                <div class="balance-label" id="session-title">12-Hour Session Status</div>
-                <div class="timer-display" id="timer">12:00:00</div>
-                <button id="btn-start" onclick="startMining()">Start 12H Mining Session</button>
-                <button id="btn-claim" class="btn-claim hidden" onclick="claimTokens()">Claim Rewards</button>
-            </div>
-
-            <!-- Watch Ads for Bonus Rewards -->
-            <div class="card" style="text-align: center;">
-                <div class="balance-label">Liquidity Pool Booster</div>
-                <p style="font-size: 12px; color: #94a3b8; margin: 6px 0;">Watch Ads to earn +5 bonus $NEXIS & fund protocol DEX liquidity! (<span id="ad-count">0</span>/2 watched)</p>
-                <button class="btn-ad" id="btn-ad" onclick="watchAd()">🎬 Watch Ad for +5 $NEXIS Bonus</button>
-            </div>
-
-            <!-- Stats -->
-            <div class="card">
-                <div class="stat-row">
-                    <span>Base Mining Rate:</span>
-                    <span class="stat-value"><span id="disp-rate">2.0</span> $NEXIS/hr</span>
-                </div>
-                <div class="stat-row">
-                    <span>Total Mined Supply:</span>
-                    <span class="stat-value"><span id="disp-total-mined">0</span> / 10 Billion</span>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-bar" id="halving-progress"></div>
-                </div>
-            </div>
-
-            <!-- Only shown if user is admin -->
-            <button id="btn-admin-access" class="btn-admin hidden" onclick="toggleAdminPanel()">🛠 Admin Portal Access</button>
-        </div>
-
-        <!-- Secret Admin Portal -->
-        <div id="admin-section" class="card hidden">
-            <div class="balance-label" style="color: #ef4444; margin-bottom: 10px;">Admin Command Console</div>
-            <input type="password" id="admin-key" placeholder="Enter Admin Secret Passkey">
-            <input type="text" id="ann-title" placeholder="Announcement Title">
-            <textarea id="ann-content" placeholder="Update message for all miners..." rows="3"></textarea>
-            <button style="background: #ef4444;" onclick="postAnnouncement()">Broadcast Update to All Users</button>
-        </div>
-
-        <p id="status"></p>
+        <button class="btn" onclick="login()">Access Dashboard</button>
+        <div id="status"></div>
     </div>
 
-    <script>
-        let currentUser = null;
-        let activeSession = null;
-        let timerInterval = null;
+    <!-- Dashboard Screen -->
+    <div id="dashboard" class="card hidden">
+        <h2 class="title">Nexis Dashboard</h2>
+        
+        <div class="stat-box" style="margin-bottom: 16px;">
+            <div class="stat-label">Your Balance</div>
+            <div class="stat-value" style="font-size: 28px;" id="disp-balance">0.0000</div>
+            <div style="font-size: 12px; color: var(--text-muted);">$NEXIS</div>
+        </div>
 
-        async function registerUser() {
-            const emailInput = document.getElementById('email').value.trim();
-            if (!emailInput || !emailInput.includes('@')) return alert('Please enter a valid email address');
+        <button id="btn-start" class="btn btn-success" onclick="startMining()">Start 12H Session</button>
+        <button id="btn-claim" class="btn hidden" onclick="claimTokens()">Claim Tokens</button>
+        <button id="btn-ad" class="btn btn-warning" onclick="watchAd()">Watch Ad (+5 $NEXIS Bonus)</button>
 
+        <div id="session-timer" style="text-align: center; margin: 10px 0; font-size: 14px; color: var(--text-muted);"></div>
+
+        <div class="stat-grid">
+            <div class="stat-box">
+                <div class="stat-label">Mining Rate</div>
+                <div class="stat-value" id="disp-rate">2.0/hr</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Ads Watched</div>
+                <div class="stat-value" id="ad-count">0/2</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div class="stat-label" style="display: flex; justify-content: space-between;">
+                <span>Total Mined</span>
+                <span id="disp-progress-text">0 / 10B</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Referral Code Display -->
+        <div class="stat-box" style="margin-top: 16px;">
+            <div class="stat-label">Your Referral Code</div>
+            <div class="stat-value" id="disp-ref-code" style="font-size: 16px; letter-spacing: 1px;">-</div>
+        </div>
+
+        <!-- Announcements Section -->
+        <div style="margin-top: 20px;">
+            <h3>Announcements</h3>
+            <div id="announcements-list"></div>
+        </div>
+
+        <!-- Admin Portal Trigger Button -->
+        <button id="btn-admin-portal" class="btn hidden" style="margin-top: 20px; background-color: #ef4444;" onclick="showAdminPortal()">🛠 Admin Portal Access</button>
+
+        <button class="btn" style="background-color: #334155; margin-top: 10px;" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Admin Panel Screen -->
+    <div id="admin-panel" class="card hidden">
+        <h2 class="title" style="color: #ef4444;">Admin Control Panel</h2>
+        <div class="input-group">
+            <label for="ann-title">Announcement Title</label>
+            <input type="text" id="ann-title" placeholder="System Update">
+        </div>
+        <div class="input-group">
+            <label for="ann-content">Content</label>
+            <input type="text" id="ann-content" placeholder="Details here...">
+        </div>
+        <button class="btn" style="background-color: #ef4444;" onclick="postAnnouncement()">Broadcast Announcement</button>
+        <button class="btn" style="background-color: #334155;" onclick="hideAdminPortal()">Back to Dashboard</button>
+    </div>
+</div>
+
+<script>
+    let currentUser = null;
+    let timerInterval = null;
+
+    async function login() {
+        const email = document.getElementById('email').value;
+        if (!email) return alert('Please enter an email');
+
+        document.getElementById('status').innerText = 'Authenticating...';
+
+        try {
             const res = await fetch('/api/user/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: emailInput })
+                body: JSON.stringify({ email })
             });
+
             const data = await res.json();
-            if (res.ok) {
-                currentUser = data.user;
-                updateStatsUI(data.stats);
-                renderAnnouncements(data.announcements);
+            if (!res.ok) throw new Error(data.error);
 
-                document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
-                document.getElementById('disp-rate').innerText = data.currentRate;
+            currentUser = data.user;
+            document.getElementById('status').innerText = '';
 
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
 
-                // Check if user is admin to show the admin button
-                if (currentUser.is_admin) {
-                    document.getElementById('btn-admin-access').classList.remove('hidden');
-                }
+            updateUI(data);
+        } catch (err) {
+            document.getElementById('status').innerText = err.message;
+        }
+    }
 
-                if (data.activeSession) {
-                    activeSession = data.activeSession;
-                    document.getElementById('ad-count').innerText = activeSession.ads_watched || 0;
-                    startCountdownTimer(new Date(activeSession.start_time));
-                    document.getElementById('btn-start').classList.add('hidden');
-                    document.getElementById('btn-claim').classList.remove('hidden');
-                } else {
-                    document.getElementById('timer').innerText = 'Ready to Mine';
-                }
-            } else {
-                alert(data.error);
-            }
+    function updateUI(data) {
+        document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
+        document.getElementById('disp-rate').innerText = `${data.currentRate}/hr`;
+        document.getElementById('disp-ref-code').innerText = currentUser.referral_code || 'N/A';
+
+        // Check Admin Status
+        if (currentUser.is_admin) {
+            document.getElementById('btn-admin-portal').classList.remove('hidden');
+        } else {
+            document.getElementById('btn-admin-portal').classList.add('hidden');
         }
 
-        async function startMining() {
-            const res = await fetch('/api/mine/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUser.id })
+        // Stats & Halving
+        const totalMined = parseFloat(data.stats.total_mined);
+        const maxSupply = parseFloat(data.stats.max_supply);
+        const pct = ((totalMined / maxSupply) * 100).toFixed(4);
+        document.getElementById('progress-fill').style.width = `${pct}%`;
+        document.getElementById('disp-progress-text').innerText = `${totalMined.toFixed(0)} / 10B`;
+
+        // Announcements
+        const annList = document.getElementById('announcements-list');
+        annList.innerHTML = '';
+        if (data.announcements && data.announcements.length > 0) {
+            data.announcements.forEach(a => {
+                annList.innerHTML += `<div class="announcement"><strong>${a.title}</strong><br>${a.content}</div>`;
             });
-            const data = await res.json();
-            if (res.ok) {
-                activeSession = data.session;
-                document.getElementById('ad-count').innerText = 0;
-                startCountdownTimer(new Date(activeSession.start_time));
-                document.getElementById('btn-start').classList.add('hidden');
-                document.getElementById('btn-claim').classList.remove('hidden');
-                document.getElementById('status').innerText = '12-Hour mining session started!';
+        } else {
+            annList.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center;">No announcements yet.</div>';
+        }
+
+        // Session State
+        if (data.activeSession) {
+            document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('btn-claim').classList.remove('hidden');
+            document.getElementById('ad-count').innerText = `${data.activeSession.ads_watched || 0}/2`;
+            startTimer(data.activeSession.start_time);
+        } else {
+            document.getElementById('btn-start').classList.remove('hidden');
+            document.getElementById('btn-claim').classList.add('hidden');
+            document.getElementById('session-timer').innerText = 'No active mining session.';
+        }
+    }
+
+    function startTimer(startTimeStr) {
+        if (timerInterval) clearInterval(timerInterval);
+        const startTime = new Date(startTimeStr).getTime();
+        const endTime = startTime + (12 * 60 * 60 * 1000);
+
+        timerInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            if (distance < 0) {
+                clearInterval(timerInterval);
+                document.getElementById('session-timer').innerText = '12H Session Completed! Ready to claim.';
             } else {
-                document.getElementById('status').innerText = data.message || data.error;
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById('session-timer').innerText = `Session ends in: ${hours}h ${minutes}m ${seconds}s`;
             }
+        }, 1000);
+    }
+
+    async function startMining() {
+        if (!currentUser) return;
+        const res = await fetch('/api/mine/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            login();
+        } else {
+            alert(data.message || data.error);
         }
+    }
 
-        async function watchAd() {
-            if (!currentUser) return;
-            document.getElementById('status').innerText = 'Loading Ad sponsor video...';
-
-            setTimeout(async () => {
-                const res = await fetch('/api/mine/watch-ad', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: currentUser.id })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    currentUser.balance = parseFloat(data.newBalance);
-                    document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
-                    document.getElementById('ad-count').innerText = data.adsWatched;
-                    document.getElementById('status').innerText = data.message;
-                } else {
-                    document.getElementById('status').innerText = data.error;
-                }
-            }, 1500);
+    async function claimTokens() {
+        if (!currentUser) return;
+        const res = await fetch('/api/mine/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message);
+            login();
+        } else {
+            alert(data.error);
         }
+    }
 
-        async function claimTokens() {
-            const res = await fetch('/api/mine/claim', {
+    async function watchAd() {
+        if (!currentUser) return;
+        document.getElementById('status').innerText = 'Watching sponsor ad...';
+        
+        // Simulation ad timer
+        setTimeout(async () => {
+            const res = await fetch('/api/mine/watch-ad', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: currentUser.id })
@@ -209,93 +398,54 @@
             if (res.ok) {
                 currentUser.balance = parseFloat(data.newBalance);
                 document.getElementById('disp-balance').innerText = parseFloat(currentUser.balance).toFixed(4);
-                updateStatsUI(data.stats);
-                document.getElementById('status').innerText = `Claimed ${parseFloat(data.claimed).toFixed(4)} $NEXIS!`;
-
-                if (data.sessionEnded) {
-                    clearInterval(timerInterval);
-                    document.getElementById('timer').innerText = 'Session Expired';
-                    document.getElementById('btn-claim').classList.add('hidden');
-                    document.getElementById('btn-start').classList.remove('hidden');
-                    activeSession = null;
-                }
+                document.getElementById('ad-count').innerText = `${data.adsWatched}/2`;
+                document.getElementById('status').innerText = data.message;
             } else {
-                document.getElementById('status').innerText = data.message || data.error;
+                document.getElementById('status').innerText = data.error;
             }
+        }, 1500);
+    }
+
+    function showAdminPortal() {
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+    }
+
+    function hideAdminPortal() {
+        document.getElementById('admin-panel').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+    }
+
+    async function postAnnouncement() {
+        const title = document.getElementById('ann-title').value;
+        const content = document.getElementById('ann-content').value;
+        if (!title || !content) return alert('Fill in title & content');
+
+        const res = await fetch('/api/admin/announcement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminKey: 'NEXIS_ADMIN_2026', title, content })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert('Announcement published!');
+            document.getElementById('ann-title').value = '';
+            document.getElementById('ann-content').value = '';
+            hideAdminPortal();
+            login();
+        } else {
+            alert(data.error);
         }
+    }
 
-        function toggleAdminPanel() {
-            const adminSec = document.getElementById('admin-section');
-            adminSec.classList.toggle('hidden');
-        }
-
-        async function postAnnouncement() {
-            const adminKey = document.getElementById('admin-key').value.trim();
-            const title = document.getElementById('ann-title').value.trim();
-            const content = document.getElementById('ann-content').value.trim();
-
-            if (!adminKey || !title || !content) return alert('Fill in all admin fields!');
-
-            const res = await fetch('/api/admin/announcement', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ adminKey, title, content })
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                alert('Update published to all users!');
-                document.getElementById('ann-title').value = '';
-                document.getElementById('ann-content').value = '';
-                toggleAdminPanel();
-            } else {
-                alert(data.error);
-            }
-        }
-
-        function renderAnnouncements(list) {
-            const feed = document.getElementById('announcements-feed');
-            if (!list || list.length === 0) return;
-
-            feed.innerHTML = list.map(item => `
-                <div class="announcement-box">
-                    <strong>${item.title}</strong>
-                    <p style="margin-top:2px;">${item.content}</p>
-                </div>
-            `).join('');
-        }
-
-        function startCountdownTimer(startTime) {
-            if (timerInterval) clearInterval(timerInterval);
-            
-            timerInterval = setInterval(() => {
-                const now = new Date();
-                const elapsedMs = now - startTime;
-                const totalDurationMs = 12 * 60 * 60 * 1000;
-                const remainingMs = totalDurationMs - elapsedMs;
-
-                if (remainingMs <= 0) {
-                    clearInterval(timerInterval);
-                    document.getElementById('timer').innerText = '00:00:00 (Session Completed)';
-                    return;
-                }
-
-                const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-                const minutes = Math.floor((remainingMs / 1000 / 60) % 60);
-                const seconds = Math.floor((remainingMs / 1000) % 60);
-
-                document.getElementById('timer').innerText = 
-                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            }, 1000);
-        }
-
-        function updateStatsUI(stats) {
-            const totalMined = parseFloat(stats.total_mined);
-            document.getElementById('disp-total-mined').innerText = totalMined.toFixed(0);
-            
-            const progressPercent = Math.min((totalMined / 10000000000) * 100, 100);
-            document.getElementById('halving-progress').style.width = `${progressPercent}%`;
-        }
-    </script>
+    function logout() {
+        currentUser = null;
+        if (timerInterval) clearInterval(timerInterval);
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('email').value = '';
+    }
+</script>
 </body>
 </html>

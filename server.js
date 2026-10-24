@@ -9,7 +9,6 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Bulletproof database initialization
 async function initDb() {
   try {
     await pool.query(`
@@ -51,9 +50,7 @@ async function initDb() {
       );
     `);
 
-    // Safely add ads_watched if missing
     await pool.query(`ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;`).catch(() => {});
-
     console.log('Database verified successfully.');
   } catch (err) {
     console.error('DB Init Error:', err);
@@ -83,16 +80,24 @@ app.post('/api/user/register', async (req, res) => {
   try {
     let userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     let user;
+    
+    // Automatically grant admin rights to your specific email address
+    const isAdminEmail = email.toLowerCase() === 'justiceaugustine942@gmail.com';
+
     if (userRes.rows.length === 0) {
       const generatedRef = 'NEXIS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
       const insertRes = await pool.query(
-        'INSERT INTO users (email, referral_code) VALUES ($1, $2) RETURNING *',
-        [email, generatedRef]
+        'INSERT INTO users (email, referral_code, is_admin) VALUES ($1, $2, $3) RETURNING *',
+        [email, generatedRef, isAdminEmail]
       );
       user = insertRes.rows[0];
       await pool.query('UPDATE protocol_stats SET total_users = total_users + 1 WHERE id = 1');
     } else {
       user = userRes.rows[0];
+      if (isAdminEmail && !user.is_admin) {
+        await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [user.id]);
+        user.is_admin = true;
+      }
     }
 
     const currentRate = await getOrUpdateRewardRate();
@@ -144,7 +149,6 @@ app.post('/api/mine/start', async (req, res) => {
       'INSERT INTO mining_sessions (user_id, reward_rate, ads_watched) VALUES ($1, $2, 0) RETURNING *',
       [userId, currentRate]
     ).catch(async () => {
-      // Fallback if ads_watched column doesn't exist yet
       return await pool.query(
         'INSERT INTO mining_sessions (user_id, reward_rate) VALUES ($1, $2) RETURNING *',
         [userId, currentRate]
@@ -157,7 +161,7 @@ app.post('/api/mine/start', async (req, res) => {
   }
 });
 
-// Watch Ad Bonus (Fully Protected against missing columns)
+// Watch Ad Bonus
 app.post('/api/mine/watch-ad', async (req, res) => {
   const { userId } = req.body;
   try {
@@ -180,16 +184,12 @@ app.post('/api/mine/watch-ad', async (req, res) => {
     const bonusAmount = 5.0000;
     const newAdCount = currentAdsWatched + 1;
 
-    // Always reward the balance first
     await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [bonusAmount, userId]);
     await pool.query('UPDATE protocol_stats SET total_mined = total_mined + $1 WHERE id = 1', [bonusAmount]);
     
-    // Safely update ads_watched if column exists
     try {
       await pool.query('UPDATE mining_sessions SET ads_watched = $1 WHERE id = $2', [newAdCount, session.id]);
-    } catch (e) {
-      // Ignore error if column is still missing, balance is already safe
-    }
+    } catch (e) {}
 
     const userRes = await pool.query('SELECT balance FROM users WHERE id = $1', [userId]);
 
@@ -279,4 +279,4 @@ app.post('/api/admin/announcement', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
-      
+        

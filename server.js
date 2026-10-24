@@ -28,7 +28,6 @@ async function initDb() {
         id SERIAL PRIMARY KEY,
         balance NUMERIC(20, 8) DEFAULT 0,
         email VARCHAR(255) UNIQUE NOT NULL,
-        referral_code VARCHAR(50) UNIQUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -51,6 +50,7 @@ async function initDb() {
 
     // Safely add missing columns to legacy tables
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;`).catch(() => {});
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(50);`).catch(() => {});
     await pool.query(`ALTER TABLE mining_sessions ADD COLUMN IF NOT EXISTS ads_watched INT DEFAULT 0;`).catch(() => {});
 
     console.log('Database verified successfully.');
@@ -87,18 +87,22 @@ app.post('/api/user/register', async (req, res) => {
 
     if (userRes.rows.length === 0) {
       const generatedRef = 'NEXIS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      const insertRes = await pool.query(
-        'INSERT INTO users (email, referral_code, is_admin) VALUES ($1, $2, $3) RETURNING *',
-        [email, generatedRef, isAdminEmail]
-      ).catch(async () => {
-        // Fallback if is_admin column fails for any reason
-        const fallbackRes = await pool.query(
-          'INSERT INTO users (email, referral_code) VALUES ($1, $2) RETURNING *',
-          [email, generatedRef]
+      
+      try {
+        const insertRes = await pool.query(
+          'INSERT INTO users (email, referral_code, is_admin) VALUES ($1, $2, $3) RETURNING *',
+          [email, generatedRef, isAdminEmail]
         );
-        return fallbackRes;
-      });
-      user = insertRes.rows[0];
+        user = insertRes.rows[0];
+      } catch (insertErr) {
+        // Fallback if referral_code or is_admin column is failing
+        const fallbackRes = await pool.query(
+          'INSERT INTO users (email) VALUES ($1) RETURNING *',
+          [email]
+        );
+        user = fallbackRes.rows[0];
+      }
+
       await pool.query('UPDATE protocol_stats SET total_users = total_users + 1 WHERE id = 1');
     } else {
       user = userRes.rows[0];

@@ -1,13 +1,11 @@
 {
   "name": "nexis-protocol",
   "version": "1.0.0",
-  "description": "Nexis Protocol Cloud Mining",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
     "express": "^4.19.2"
   }
 }

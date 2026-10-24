@@ -6,9 +6,51 @@ const pool = require('./db');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve the front-end dashboard
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Calculate reward rate based on total supply mined
+// Automatically create database tables on startup (No shell needed!)
+async function initDb() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS protocol_stats (
+        id SERIAL PRIMARY KEY,
+        total_mined NUMERIC(20, 8) DEFAULT 0,
+        total_users INT DEFAULT 0,
+        current_reward_rate NUMERIC(10, 4) DEFAULT 2.0000
+      );
+      
+      INSERT INTO protocol_stats (id, total_mined, total_users, current_reward_rate)
+      SELECT 1, 0, 0, 2.0000 
+      WHERE NOT EXISTS (SELECT 1 FROM protocol_stats WHERE id = 1);
+
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        wallet_address VARCHAR(255) UNIQUE NOT NULL,
+        balance NUMERIC(20, 8) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS mining_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reward_rate NUMERIC(10, 4) NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE
+      );
+    `);
+    console.log('Database tables initialized successfully!');
+  } catch (err) {
+    console.error('Error initializing database:', err);
+  }
+}
+
+// Run the database initialization
+initDb();
+
+// Helper function to calculate reward rate based on total supply mined
 async function getOrUpdateRewardRate() {
   const statsRes = await pool.query('SELECT total_mined FROM protocol_stats WHERE id = 1');
   const totalMined = parseFloat(statsRes.rows[0].total_mined);
@@ -108,4 +150,3 @@ app.post('/api/mine/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nexis Protocol running on port ${PORT}`));
-              
